@@ -4,6 +4,9 @@ from PIL import Image
 from services.models import Service
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from rest_framework.authtoken.models import Token
+from django.conf import settings
+
 # Create your models here.
 
 class Profile(models.Model):
@@ -14,7 +17,7 @@ class Profile(models.Model):
         (SUPERVISOR, 'Supervisor'),
     )
 
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User,related_name="profile", on_delete=models.CASCADE)
     fname = models.CharField(max_length=200, null=True)
     lname = models.CharField(max_length=200, null=True)
     photo = models.ImageField(upload_to='photos/%y/%m/%d',null=True)
@@ -57,7 +60,6 @@ class Profile(models.Model):
         ('Alhadara','Alhadara'),
     )
     work_address = models.CharField(max_length=50, choices=wu_choices, null=True)
-    rate = models.DecimalField(max_digits=2, decimal_places=2, null=True)
     role = models.PositiveSmallIntegerField(choices=ROLES, null=True, blank=True)
     users_favourite = models.ManyToManyField(User, related_name="user_wishlist", blank=True)
     def __str__(self):
@@ -76,14 +78,6 @@ class Profile(models.Model):
         else: 
             return Profile.get_all_providers() 
         
-    # def save(self , *args, **kwargs):
-    #     super(Profile, self).save(*args, **kwargs)
-    #     img = Image.open(self.photo.path)
-
-    #     if img.height > 200 or img.width > 300 :
-    #         output_size = ( 200 , 300)
-    #         img.thumbnail(output_size)
-    #         img.save(self.photo.path)
 @receiver(post_save, sender=User)
 def create_or_update_user_profile(sender, instance, created, **kwargs):
     if created:
@@ -91,8 +85,9 @@ def create_or_update_user_profile(sender, instance, created, **kwargs):
     instance.profile.save()
 
 
-# class Subscription(models.Model):
-#     profile = models.ForeignKey(Profile,on_delete=models.CASCADE, null=True)
-#     accepting_policy = models.BooleanField(default=False)
-#     start_date = models.DateField(auto_now=True, auto_now_add=True)
-#     payment = models.BooleanField(default=False)
+
+@receiver(post_save, sender=User)
+def create_token(sender, instance, created, **kwargs):
+    if created:
+        Token.objects.create(user=instance)
+

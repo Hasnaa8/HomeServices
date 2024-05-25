@@ -31,36 +31,3 @@ class Service(models.Model):
     def get_all_servicess():
         return Service.objects.all()
     
-    
-
-# class Provider(models.Model):
-#     provider_id = models.IntegerField(primary_key=True)
-#     customer = models.OneToOneField(Customer, null=True, blank=True, on_delete=models.CASCADE)
-#     service = models.ForeignKey(Service, on_delete=models.CASCADE)
-#     desc = models.TextField()
-#     worktimeForm = models.TimeField(blank=True)
-#     worktimeTo = models.TimeField(blank=True)
-#     costdomainForm = models.DecimalField(max_digits=6, decimal_places=2)
-#     costdomainTo = models.DecimalField(max_digits=6, decimal_places=2)
-#     rating = models.DecimalField(max_digits=2, decimal_places=1)
-#     class Meta:
-#         verbose_name = 'provider'
-
-# rate_choices = [
-#         (1,'2'),(1,'2'),(3,'3'),(4,'4'),(5,'5')
-#     ]
-
-# class Review(models.Model):
-#     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
-#     provider = models.ForeignKey(Provider, on_delete=models.CASCADE)
-#     date = models.DateTimeField(auto_now_add=True)
-#     comment = models.TextField(max_length=3000, blank=True)
-    
-    
-#     rate = models.PositiveSmallIntegerField(choices=rate_choices)
-#     likes = models.PositiveIntegerField(default=0)
-#     unlikes = models.PositiveIntegerField(default=0)
-    
-
-#     def __str__(self):
-#         return self.Provider.Customer.user.username

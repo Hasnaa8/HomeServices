@@ -1,60 +1,41 @@
 from django.shortcuts import render, redirect
-
+from django.http.response import JsonResponse
 from django.core.files.base import ContentFile
-
-
+from rest_framework import filters, generics, viewsets
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from django_filters.rest_framework import DjangoFilterBackend # type: ignore
+from .filters import *
+from rest_framework.response import Response
 from .forms import *
-
-
 from .models import *
+from .serializers import *
 from users.models import *
-# Create your views here.
+from users.serializers import *
+
+
+# list available services
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def home(request):
-    s = Service.objects.all()
-    serv = {'serv':s} 
-    return render(request,'services\home.html',serv)
+    if request.method == 'GET':
+        s = Service.objects.all()
+        serializer = ServiceSerialzer(s, many=True)
+        return Response(serializer.data)
 
+# list providers list in specific service
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def providers_list(request, pk):
-    service = Service.objects.get(pk=pk)
-    providers = Profile.objects.filter(is_craftsman=True).filter(service=service)
-    return render(request, 'services/providers_list.html', {'providers': providers})
+    if request.method == 'GET':
+        service = Service.objects.get(pk=pk)
+        providers = Profile.objects.filter(is_craftsman=True).filter(service=service)
+        serializer = ProviderProfileSerializer(providers, many=True)
+        return Response(serializer.data)
 
-
-def about_us(request):
-    return render(request, 'services/about_us.html')
-
-def contact_us(request):
-    return render(request, 'services/contact_us.html')
-
-# def login(request):
-#     pass
-
-# def settings(request):
-#     pass
-
-# def profile(request):
-#     pass
-
-
-# def rate(request, providerid):
-#     provider = Provider.objects.get(provider_id=providerid)
-
-#     customer = request.customer
-
-#     if request.method == 'POST':
-#         form = RateForm(request.POST)
-#         if form.is_valid():
-#             rat = form.save(commit=False)
-#             rat.customer = customer
-#             rat.provider = provider
-#             rat.save()
-#             return HttpResponseRedirect(reverse(''),args=[providerid])
-#     else :
-#         form = RateForm()
-#     template = loader.get_template()
-#     context = {
-#         'form':form,
-#         'provider':provider,
-#     }
-
-#     return HttpResponse(template.render(context,request))
+# search in providers list
+class ProvidersViewSet(viewsets.ModelViewSet):
+    queryset = Profile.objects.filter(is_craftsman=True)
+    serializer_class = ProviderProfileSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = ProviderFilter

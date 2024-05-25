@@ -1,135 +1,170 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.forms import UserCreationForm
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http.response import JsonResponse
 from django.contrib import messages
+from rest_framework.decorators import permission_classes
 from .forms import *
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import PasswordChangeForm
-from .forms import *
-# Create your views here.
-
-def booking_user(request, pk):
-    if request.method == 'POST':
-        form = BookingForm(request.POST)
-        if form.is_valid():
-            form0 = form.save(commit=False)
-            customer = request.user
-            provider = User.objects.get(pk=pk)
-            service = provider.profile.service
-            city = customer.profile.city
-            home_address = customer.profile.home_address
-            phone = customer.profile.phone
-
-            booking = Booking(customer=customer, provider=provider,
-                              service=service, status="pending",
-                              city=city, home_address=home_address,
-                              phone=phone, date=form0.date,
-                              time=form0.time)
-            booking.save()
-            messages.success(request,"Your booking request is sent. Please wait a few minutes.")
-            return redirect('my_orders')
-    else:
-        form = BookingForm()
-    return render(request, 'users/booking_user.html',{'form':form})
-
-def edit_booking(request, pk):
-    if request.method == 'POST':
-        form = BookingForm(request.POST)
-        if form.is_valid():
-            form0 = form.save(commit=False)
-            booking = Booking.objects.get(pk=pk)
-            booking.date = form0.date
-            booking.time = form0.time
-            booking.status = "pending"
-            booking.save()
-            messages.success(request,"Your booking request is updated.")
-            return redirect('my_orders')
-    else:
-        form = BookingForm()
-    return render(request, 'users/booking_user.html',{'form':form})
+from .serializers import *
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated  # Add authentication if needed
+from rest_framework import status, viewsets
+from users.permissions import *
+from .models import Booking
+from .serializers import BookingSerializer
 
 
-def my_orders(request):
-    bookings = Booking.objects.filter(customer=request.user)
-    return render(request, 'users/my_orders.html', 
-                  {'bookings': bookings})
+class BookingView(APIView):
+    permission_classes = [IsAuthenticated]  # Only authenticated users can create bookings
+
+    # ?????
+    def get(self, request):
+        bookings = Booking.objects.all()
+        serializer = BookingSerializer(bookings , many=True)
+        return Response(serializer.data)
+    
+    
+    def post(self, request, pk=None):
+        serializer = BookingSerializer(data=request.data)
+        if serializer.is_valid():
+            provider = Profile.objects.get(pk=pk)
+            provider = provider.user
+            # Access user from request (assuming user is authenticated)
+            serializer.save(customer=request.user, provider=provider, 
+                            home_address=request.user.profile.home_address,
+                            phone=request.user.profile.phone,
+                            service=provider.profile.service)  # Set customer automatically
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class EditBookingView(APIView):
+    permission_classes = [IsCutomerOrProvider]  # Only authenticated users can edit bookings
+
+    def get_object(self, pk):
+        try:
+            return Booking.objects.get(pk=pk)
+        except Booking.DoesNotExist:
+            return None
+    
+    def get(self, request, pk=None):
+        booking = self.get_object(pk)
+        serializer = BookingSerializer(booking)
+        return Response(serializer.data)
+    
+
+    def put(self, request, pk):
+        booking = self.get_object(pk)
+        if not booking:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        if booking.customer == request.user:
+            if booking.status == "completed":
+                return Response({"error": "Appointment cannot be edited."}, status=status.HTTP_400_BAD_REQUEST)
+
+            serializer = BookingSerializer(booking, data=request.data, partial=True)
+            if serializer.is_valid():            
+                serializer.validated_data['status'] = 'pending'
+
+                serializer.save()
+                return Response(serializer.data)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error": "Only customer can edit this appointment."}, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk=None):
+        booking = self.get_object(pk)
+        if booking.customer == request.user or booking.provider == request.user:
+
+            if booking.status == "completed":
+                return Response({"error": "Appointment cannot be deleted."}, status=status.HTTP_400_BAD_REQUEST)
+
+            booking.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response({"error": "Only Customer or Provider can delete this appointment."}, status=status.HTTP_400_BAD_REQUEST)
+
+@permission_classes([IsAuthenticated])
 def my_orders_pending(request):
     bookings = Booking.objects.filter(customer=request.user)
     pending = bookings.filter(status="pending")
-    return render(request, 'users/my_orders_pending.html', 
-                  {'pending': pending})
+    response = {
+        'bookings':list(pending.values())
+    }
+    return JsonResponse(response)
+
+@permission_classes([IsAuthenticated])
 def my_orders_confirmed(request):
     bookings = Booking.objects.filter(customer=request.user)
     confirmed = bookings.filter(status="confirmed")
-    return render(request, 'users/my_orders_confirmed.html',
-                   {'confirmed': confirmed})
+    response = {
+        'bookings':list(confirmed.values())
+    }
+    return JsonResponse(response)
+
+@permission_classes([IsAuthenticated])
 def my_orders_completed(request):
     bookings = Booking.objects.filter(customer=request.user)
     completed = bookings.filter(status="completed")
-    return render(request, 'users/my_orders_completed.html', 
-                  {'completed': completed})
+    response = {
+        'bookings':list(completed.values())
+    }
+    return JsonResponse(response)
 
-
-def my_schedule(request):
-    bookings = Booking.objects.filter(provider=request.user)
-    return render(request, 'users/my_schedule.html', {'bookings': bookings})
-
+@permission_classes([IsAuthenticatedAndIsCraftsman])
 def my_schedule_pending(request):
     bookings = Booking.objects.filter(provider=request.user)
     pending = bookings.filter(status="pending")
-    return render(request, 'users/my_schedule_pending.html',
-                   {'pending': pending})
+    response = {
+            'bookings':list(pending.values())
+        }
+    return JsonResponse(response)
 
+@permission_classes([IsAuthenticatedAndIsCraftsman])
 def my_schedule_confirmed(request):
     bookings = Booking.objects.filter(provider=request.user)
     confirmed = bookings.filter(status="confirmed")
-    return render(request, 'users/my_schedule_confirmed.html',
-                   {'confirmed': confirmed})
+    response = {
+        'bookings':list(confirmed.values())
+    }
+    return JsonResponse(response)
 
+@permission_classes([IsAuthenticatedAndIsCraftsman])
 def my_schedule_completed(request):
     bookings = Booking.objects.filter(provider=request.user)
     completed = bookings.filter(status="completed")
-    return render(request, 'users/my_schedule_completed.html',
-                   {'completed': completed})
+    response = {
+        'bookings':list(completed.values())
+    }
+    return JsonResponse(response)
 
 
+class BookingConfirmView(APIView):
+    permission_classes = [IsAuthenticatedAndIsCraftsman,IsCutomerOrProvider ] 
+    def put(self, request, pk):
+        booking = Booking.objects.get(pk=pk)
+        if not booking:
+            return Response(status=status.HTTP_404_NOT_FOUND)
 
-def appointment_details_cust(request, pk):
-    booking = Booking.objects.get(pk=pk)
-    return render(request, 'users/appointment_details_cust.html', {'booking':booking})
-    
-def appointment_details_prov(request, pk):
-    booking = Booking.objects.get(pk=pk)
-    return render(request, 'users/appointment_details_prov.html', {'booking':booking})
-    
+        if booking.status != "pending":
+            return Response({"error": "Appointment cannot be confirmed in current status."}, status=status.HTTP_400_BAD_REQUEST)
+
+        booking.status = "confirmed"
+        booking.save()
+        return Response({"message": "Appointment confirmed successfully."})
+
+class BookingCompleteView(APIView):
+    permission_classes = [IsAuthenticatedAndIsCraftsman, IsCutomerOrProvider]  
+    def put(self, request, pk):
+        booking = Booking.objects.get(pk=pk)
+        if not booking:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        if booking.status != "confirmed":
+            return Response({"error": "Appointment cannot be completed in current status."}, status=status.HTTP_400_BAD_REQUEST)
+
+        booking.status = "completed"
+        booking.save()
+        return Response({"message": "Appointment completed successfully."})
 
 
-
-def delete_order(request, pk):
-    booking = Booking.objects.get(pk=pk)
-    booking.delete()
-    messages.success(request, "The Order is deleted!")
-    return redirect('my_orders')
-
-
-def delete_appointment(request, pk):
-    booking = Booking.objects.get(pk=pk)
-    booking.delete()
-    messages.success(request, "The Appointment is deleted!")
-    return redirect('my_schedule')
-
-def confirm_appointment(request, pk):
-    booking = Booking.objects.get(pk=pk)
-    booking.status = "confirmed"
-    booking.save()
-    messages.success(request, "The appointment is confirmed successfuly")
-    return redirect('my_schedule_confirmed')
-    
-def complete_appointment(request, pk):
-    booking = Booking.objects.get(pk=pk)
-    booking.status = "completed"
-    booking.save()
-    messages.success(request, "The appointment is completed successfuly")
-    return redirect('my_schedule_completed')
-    

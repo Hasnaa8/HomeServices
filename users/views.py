@@ -1,166 +1,172 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.forms import UserCreationForm
-from django.http import HttpResponse, HttpResponseRedirect
-from django.contrib import messages
+from django.shortcuts import render, redirect, get_object_or_404 # type: ignore
+from django.contrib.auth.forms import UserCreationForm # type: ignore
+from django.http import HttpResponse, HttpResponseRedirect # type: ignore
+from django.contrib import messages # type: ignore
 from .forms import *
-from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth.forms import PasswordChangeForm
-from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth import authenticate, login, logout # type: ignore
+from django.contrib.auth.decorators import login_required # type: ignore
+from django.contrib.auth.forms import PasswordChangeForm # type: ignore
+from django.contrib.auth import update_session_auth_hash # type: ignore
 from .models import *
 from bookings.models import *
-
-# Create your views here.
-def register(request):
-    if request.method == 'POST':
-        form = UserRegiterForm(request.POST)
-        if form.is_valid():
-            form.save()
-            username = form.cleaned_data.get('username')
-            messages.success(request,f'Account created for {username}!')
-            return redirect('login')
-    else:
-        form = UserRegiterForm()
-
-    return render(request, 'users/register.html', {'form':form})    
-
-def UserLoggedIn(request):
-    if request.user.is_authenticated == True:
-        username = request.user.username
-    else:
-        username = None
-    return username
-
-def logout_view(request):
-    username = UserLoggedIn(request)
-    if username != None:
-        logout(request)
-        return redirect('home')
-
-def add_to_favourite(request, pk):
-    profile = get_object_or_404(Profile, pk=pk)
-    if profile.users_favourite.filter(pk=request.user.pk).exists():
-        profile.users_favourite.remove(request.user)
-    else:
-        profile.users_favourite.add(request.user)
-    return HttpResponseRedirect(request.META["HTTP_REFERER"])
-        
-def favourite_list(request):
-    profiles = Profile.objects.filter(users_favourite=request.user)
-    return render(request, 'users/favourite_list.html', {'favourites':profiles})
+from rest_framework.decorators import api_view 
+from rest_framework.response import Response 
+from rest_framework.views import APIView 
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework import generics, status, viewsets
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from django.contrib.auth import authenticate # type: ignore
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.authtoken.views import ObtainAuthToken
+from rest_framework.authtoken.models import Token
+from .permissions import *
+from .serializers import *
 
 
-@login_required 
-def edit_work_info(request):
-    if request.method == 'POST':
-        #u_form = UserUpdateForm(request.POST, instance=request.user)
-        w_form = WorkUpdateForm(request.POST, instance=request.user.profile)
-        if w_form.is_valid():
-            #u_form.save()
-            w_form.save()
-            
-            messages.success(request, f'Your Work Info has been updated!')
-            
-            return redirect('profile')
-    else:
-        #u_form = UserUpdateForm(instance=request.user)
-        w_form = WorkUpdateForm(instance=request.user.profile)
-    context = {
-        #'u_form':u_form,
-        'w_form':w_form
-    }
-    return render(request, 'users/edit_work_info.html', context)
+# register view - create user - create token
+class RegisterView(APIView):
+    # permission_classes = [AllowAny]  # Allow anyone to register
 
-@login_required  
-def edit_profile(request):
-    if request.method == 'POST':
-        #u_form = UserUpdateForm(request.POST, instance=request.user)
-        p_form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user.profile)
-        if p_form.is_valid():
-            #u_form.save()
-            p_form.save()
-            
-            messages.success(request, f'Your account has been updated!')
-            
-            if request.user.profile.is_craftsman :
-                return redirect('edit_work_info')
-            return redirect('profile')
-    else:
-        #u_form = UserUpdateForm(instance=request.user)
-        p_form = ProfileUpdateForm(instance=request.user.profile)
-    context = {
-        #'u_form':u_form,
-        'p_form':p_form
-    }
+    def post(self, request):
+        serializer = UserSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+# login view - authenticate user - create token
+class LoginView(APIView):
+    # permission_classes = [AllowAny]  # Allow anyone to register
+
+    def post(self, request):
+        serializer = LoginSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        username = serializer.validated_data['username']
+        password = serializer.validated_data['password']
+        user = authenticate(username=username, password=password)
+        if user:
+            login(request, user)
+            token, created = Token.objects.get_or_create(user=user)
+            return Response({'token': token.key}, status=status.HTTP_202_ACCEPTED)
+        else:
+            return Response({'error': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
+
+# logout view - delete token
+class LogoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        request.user.auth_token.delete()
+        return Response(status=status.HTTP_200_OK)
     
-    return render(request, 'users/edit_profile.html', context)
+# profile view - 
+class ProfileView(APIView):
+    permission_classes = [OwnProfileOrReadOnly]  # Require authentication for profile update
+    # authentication_classes = [TokenAuthentication]
+    def get(self, request, pk=None):
+        if pk:
+            profile = get_object_or_404(Profile, pk=pk)
+        else:
+            profile = request.user.profile
+        if profile.is_craftsman:
+            serializer = ProviderProfileSerializer(profile)
+        else :
+            serializer = CustomerProfileSerializer(profile)
+        return Response(serializer.data)
+    
+# edit personal profile info 
+class PersonalInfoView(APIView):
+    #user has that accounts
+    permission_classes = [OwnProfileOrReadOnly]  # Require authentication for profile update
+    # authentication_classes = [TokenAuthentication]
 
-def profile(request, pk=None):
-    # if request.user.profile.is_craftsman :
-    #     messages.success(request, "Welcome to this application, starting your job here!")
-    if pk:
-        user = get_object_or_404(User, pk=pk)
-    else:
-        user = request.user
-    args = {'user': user}
-    return render(request, 'users/profile.html', args)
+    def get(self, request):
+        profile = request.user.profile
+        serializer = PersonalInfoSerializer(profile)
+        return Response(serializer.data)
+    
+    def put(self, request):
+        profile = request.user.profile
+        serializer = PersonalInfoSerializer(profile, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
 
+#if craftsman => edit work info
+class WorkInfoView(APIView):
+    #user has that account and craftsman
+    permission_classes = [IsAuthenticatedAndIsCraftsman, OwnProfileOrReadOnly]  # Require authentication for profile update
+    # authentication_classes = [TokenAuthentication]
 
-def settings(request):
-    return render(request, 'users/settings.html')
+    def get(self, request):
+        profile = request.user.profile
+        serializer = WorkInfoSerializer(profile)
+        return Response(serializer.data)
+    
+    def put(self, request):
+        profile = request.user.profile
+        serializer = WorkInfoSerializer(profile, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
 
-def change_password(request):
-    if request.method == 'POST':
-        form = PasswordChangeForm(request.user, request.POST)
-        if form.is_valid():
-            user = form.save()
-            update_session_auth_hash(request, user)  # To keep the user logged in
-            return redirect('password_change_done')
-    else:
-        form = PasswordChangeForm(request.user)
-    return render(request, 'users/password_change.html', {'form': form})
+# change pass - check pass - set pass
+class ChangePasswordView(APIView):
+    permission_classes = (IsAuthenticated,)
 
-def password_change_done(request):
-    return render(request, 'users/password_change_done.html')
+    def post(self, request, *args, **kwargs):
+        serializer = ChangePasswordSerializer(data=request.data)
+        if serializer.is_valid():
+            old_password = serializer.validated_data['old_password']
+            new_password = serializer.validated_data['new_password']
+            confirm_new_password = serializer.validated_data['confirm_new_password']
 
-@login_required
-def change_email(request):
-    if request.method == 'POST':
-        form = ChangeEmailForm(request.POST)
-        if form.is_valid():
-            new_email = form.cleaned_data['new_email']
-            current_password = form.cleaned_data['current_password']
-            
             user = request.user
-            if user.check_password(current_password):
-                user.email = new_email
-                user.save()
-                messages.success(request, 'Email changed successfully.')
-                return redirect('profile')  # Redirect to profile page or any other page
-            else:
-                messages.error(request, 'Incorrect current password.')
-    else:
-        form = ChangeEmailForm()
-    return render(request, 'users/change_email.html', {'form': form})
+            if not user.check_password(old_password):
+                return Response({"old_password": ["Wrong password."]}, status=status.HTTP_400_BAD_REQUEST)
 
- 
-@login_required
-def delete_account(request):
-    if request.method == 'POST':
-        form = DeleteAccountForm(request.POST)
-        if form.is_valid():
-            email = form.cleaned_data['email']
-            password = form.cleaned_data['password']
+            if new_password != confirm_new_password:
+                return Response({"password & confirm": ["didn't match."]}, status=status.HTTP_400_BAD_REQUEST)
+
+            user.set_password(new_password)
+            user.save()
+            return Response({"detail": "Password has been changed."}, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+# change email - check pass - email = newemail
+class ChangeEmailView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request, *args, **kwargs):
+        serializer = ChangeEmailSerializer(data=request.data)
+        if serializer.is_valid():
+            password = serializer.validated_data['password']
+            new_email = serializer.validated_data['new_email']
+
             user = request.user
-            if user.check_password(password) and user.email == email:
-                # user.profile.delete()
-                user.delete()
-                messages.success(request, 'Account deleted successfully.')
-                return redirect('home')  # Redirect to profile page or any other page
-            else:
-                messages.error(request, 'Incorrect current password or email.')
-    else:
-        form = DeleteAccountForm()
-    return render(request, 'users/delete_account.html', {'form': form})
+            if not user.check_password(password):
+                return Response({"password": ["Wrong password."]}, status=status.HTTP_400_BAD_REQUEST)
 
-        
+            user.email = new_email
+            user.save()
+            return Response({"detail": "Email has been changed."}, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)   
+
+# delete user
+class DeleteUserView(generics.GenericAPIView):
+    serializer_class = DeleteUserSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    # to get user's account
+    def get_object(self):
+        return self.request.user
+    
+    def delete(self, request, *args, **kwargs):
+        user = self.get_object()
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
