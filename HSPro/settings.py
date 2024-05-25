@@ -32,6 +32,7 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
     # 'djstripe', #add this
+    'drf_spectacular',
     'crispy_forms',
     'crispy_bootstrap4',
     'users.apps.UsersConfig',
@@ -46,12 +47,17 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
-    
 ]
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES':
         ['rest_framework.authentication.TokenAuthentication'],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Home Services API',
+    # OTHER SETTINGS
 }
 
 MIDDLEWARE = [
