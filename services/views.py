@@ -4,7 +4,8 @@ from django.core.files.base import ContentFile
 from rest_framework import filters, generics, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
-from django_filters.rest_framework import DjangoFilterBackend # type: ignore
+from django_filters.rest_framework import DjangoFilterBackend
+from users.permissions import OwnProfileOrReadOnly # type: ignore
 from .filters import *
 from rest_framework.response import Response
 from .forms import *
@@ -35,7 +36,9 @@ def providers_list(request, pk):
 
 # search in providers list
 class ProvidersViewSet(viewsets.ModelViewSet):
+    permission_classes = [OwnProfileOrReadOnly]
     queryset = Profile.objects.filter(is_craftsman=True)
     serializer_class = ProviderProfileSerializer
+    
     filter_backends = [DjangoFilterBackend]
     filterset_class = ProviderFilter

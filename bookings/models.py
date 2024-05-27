@@ -4,8 +4,8 @@ from users.models import *
 from services.models import *
 # Create your models here.
 class Booking(models.Model):
-    customer = models.ForeignKey(User, related_name='customer_booking', on_delete=models.CASCADE, null=True)
-    provider = models.ForeignKey(User, related_name='provider_booking', on_delete=models.CASCADE, null=True)
+    customer = models.ForeignKey(Profile, related_name='customer_booking', on_delete=models.CASCADE, null=True)
+    provider = models.ForeignKey(Profile, related_name='provider_booking', on_delete=models.CASCADE, null=True)
     service = models.ForeignKey(Service, related_name='service_booking', on_delete=models.CASCADE, null=True)
 
     STATUS = [

@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.forms import UserCreationForm
 from django.http.response import JsonResponse
 from django.contrib import messages
-from rest_framework.decorators import permission_classes
+from rest_framework.decorators import api_view, permission_classes
 from .forms import *
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
@@ -12,6 +12,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated  # Add authentication if needed
 from rest_framework import status, viewsets
+# from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
+# from drf_spectacular.types import OpenApiTypes
 from users.permissions import *
 from .models import Booking
 from .serializers import BookingSerializer
@@ -19,25 +21,21 @@ from .serializers import BookingSerializer
 
 class BookingView(APIView):
     permission_classes = [IsAuthenticated]  # Only authenticated users can create bookings
-
-    # ?????
-    def get(self, request):
-        bookings = Booking.objects.all()
-        serializer = BookingSerializer(bookings , many=True)
-        return Response(serializer.data)
-    
-    
+ 
     def post(self, request, pk=None):
-        serializer = BookingSerializer(data=request.data)
-        if serializer.is_valid():
-            provider = Profile.objects.get(pk=pk)
-            provider = provider.user
-            # Access user from request (assuming user is authenticated)
-            serializer.save(customer=request.user, provider=provider, 
-                            home_address=request.user.profile.home_address,
-                            phone=request.user.profile.phone,
-                            service=provider.profile.service)  # Set customer automatically
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        if pk:
+            serializer = BookingSerializer(data=request.data)
+            if serializer.is_valid():
+                provider = Profile.objects.get(pk=pk)
+                if provider.is_craftsman:
+                    # Access user from request (assuming user is authenticated)
+                    serializer.save(customer=request.user.profile, provider=provider, 
+                                    home_address=request.user.profile.home_address,
+                                    phone=request.user.profile.phone,
+                                    service=provider.service)  # Set customer automatically
+                    return Response(serializer.data, status=status.HTTP_201_CREATED)
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)    
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -52,15 +50,17 @@ class EditBookingView(APIView):
     
     def get(self, request, pk=None):
         booking = self.get_object(pk)
-        serializer = BookingSerializer(booking)
-        return Response(serializer.data)
+        if booking:
+            serializer = BookingSerializer(booking)
+            return Response(serializer.data)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
     
 
     def put(self, request, pk):
         booking = self.get_object(pk)
         if not booking:
             return Response(status=status.HTTP_404_NOT_FOUND)
-        if booking.customer == request.user:
+        if booking.customer == request.user.profile:
             if booking.status == "completed":
                 return Response({"error": "Appointment cannot be edited."}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -75,7 +75,7 @@ class EditBookingView(APIView):
 
     def delete(self, request, pk=None):
         booking = self.get_object(pk)
-        if booking.customer == request.user or booking.provider == request.user:
+        if booking.customer == request.user.profile or booking.provider == request.user.profile:
 
             if booking.status == "completed":
                 return Response({"error": "Appointment cannot be deleted."}, status=status.HTTP_400_BAD_REQUEST)
@@ -84,60 +84,66 @@ class EditBookingView(APIView):
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response({"error": "Only Customer or Provider can delete this appointment."}, status=status.HTTP_400_BAD_REQUEST)
 
+@api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def my_orders_pending(request):
-    bookings = Booking.objects.filter(customer=request.user)
-    pending = bookings.filter(status="pending")
-    response = {
-        'bookings':list(pending.values())
-    }
-    return JsonResponse(response)
+    if request.method == 'GET':
+        bookings = Booking.objects.filter(customer=request.user.profile)
+        pending = bookings.filter(status="pending")
+        serializer = BookingSerializer(pending, many=True)
 
+        return Response(serializer.data)
+
+@api_view(['GET'])
 @permission_classes([IsAuthenticated])
-def my_orders_confirmed(request):
-    bookings = Booking.objects.filter(customer=request.user)
-    confirmed = bookings.filter(status="confirmed")
-    response = {
-        'bookings':list(confirmed.values())
-    }
-    return JsonResponse(response)
+def my_orders_confirmed(request):    
+    if request.method == 'GET':
+        bookings = Booking.objects.filter(customer=request.user.profile)
+        confirmed = bookings.filter(status="confirmed")
+        serializer = BookingSerializer(confirmed, many=True)
 
+        return Response(serializer.data)
+
+@api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def my_orders_completed(request):
-    bookings = Booking.objects.filter(customer=request.user)
-    completed = bookings.filter(status="completed")
-    response = {
-        'bookings':list(completed.values())
-    }
-    return JsonResponse(response)
+    if request.method == 'GET':
+        bookings = Booking.objects.filter(customer=request.user.profile)
+        completed = bookings.filter(status="completed")
+        serializer = BookingSerializer(completed, many=True)
 
+        return Response(serializer.data)
+
+
+@api_view(['GET'])
 @permission_classes([IsAuthenticatedAndIsCraftsman])
 def my_schedule_pending(request):
-    bookings = Booking.objects.filter(provider=request.user)
-    pending = bookings.filter(status="pending")
-    response = {
-            'bookings':list(pending.values())
-        }
-    return JsonResponse(response)
+    if request.method == 'GET':
+        bookings = Booking.objects.filter(provider=request.user.profile)
+        pending = bookings.filter(status="pending")
+        serializer = BookingSerializer(pending, many=True)
 
+        return Response(serializer.data)
+
+@api_view(['GET'])
 @permission_classes([IsAuthenticatedAndIsCraftsman])
 def my_schedule_confirmed(request):
-    bookings = Booking.objects.filter(provider=request.user)
-    confirmed = bookings.filter(status="confirmed")
-    response = {
-        'bookings':list(confirmed.values())
-    }
-    return JsonResponse(response)
+    if request.method == 'GET':
+        bookings = Booking.objects.filter(provider=request.user.profile)
+        confirmed = bookings.filter(status="confirmed")
+        serializer = BookingSerializer(confirmed, many=True)
 
+        return Response(serializer.data)
+
+@api_view(['GET'])
 @permission_classes([IsAuthenticatedAndIsCraftsman])
 def my_schedule_completed(request):
-    bookings = Booking.objects.filter(provider=request.user)
-    completed = bookings.filter(status="completed")
-    response = {
-        'bookings':list(completed.values())
-    }
-    return JsonResponse(response)
+    if request.method == 'GET':    
+        bookings = Booking.objects.filter(provider=request.user.profile)
+        completed = bookings.filter(status="completed")
+        serializer = BookingSerializer(completed, many=True)
 
+        return Response(serializer.data)
 
 class BookingConfirmView(APIView):
     permission_classes = [IsAuthenticatedAndIsCraftsman,IsCutomerOrProvider ] 

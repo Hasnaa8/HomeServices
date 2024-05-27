@@ -47,7 +47,11 @@ class LoginView(APIView):
         if user:
             login(request, user)
             token, created = Token.objects.get_or_create(user=user)
-            return Response({'token': token.key}, status=status.HTTP_202_ACCEPTED)
+            if user.profile.is_craftsman:
+                profile = ProviderProfileSerializer(user.profile)
+            else:
+                profile = CustomerProfileSerializer(user.profile)
+            return Response({'profile':profile.data,'token': token.key}, status=status.HTTP_202_ACCEPTED)
         else:
             return Response({'error': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
 

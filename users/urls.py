@@ -11,7 +11,5 @@ app_name = "users"
 # router.register(r'favourites', FavouriteView, basename='favourites')
 
 urlpatterns = [
-    # path('favourite/', views.favourite_list, name='favourite'),
-    # path('favourite/add_to_favourite/<int:pk>', views.add_to_favourite, name='add_to_favourite'),
-    # path('favourites', include(router.urls)),
+
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

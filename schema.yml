@@ -51,43 +51,154 @@ paths:
               schema:
                 $ref: '#/components/schemas/AuthToken'
           description: ''
-  /booking_user/:
+  /api/schema/:
     get:
-      operationId: booking_user_retrieve
+      operationId: api_schema_retrieve
+      description: |-
+        OpenApi3 schema for this API. Format can be selected via content negotiation.
+
+        - YAML: application/vnd.oai.openapi
+        - JSON: application/vnd.oai.openapi+json
+      parameters:
+      - in: query
+        name: format
+        schema:
+          type: string
+          enum:
+          - json
+          - yaml
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - af
+          - ar
+          - ar-dz
+          - ast
+          - az
+          - be
+          - bg
+          - bn
+          - br
+          - bs
+          - ca
+          - ckb
+          - cs
+          - cy
+          - da
+          - de
+          - dsb
+          - el
+          - en
+          - en-au
+          - en-gb
+          - eo
+          - es
+          - es-ar
+          - es-co
+          - es-mx
+          - es-ni
+          - es-ve
+          - et
+          - eu
+          - fa
+          - fi
+          - fr
+          - fy
+          - ga
+          - gd
+          - gl
+          - he
+          - hi
+          - hr
+          - hsb
+          - hu
+          - hy
+          - ia
+          - id
+          - ig
+          - io
+          - is
+          - it
+          - ja
+          - ka
+          - kab
+          - kk
+          - km
+          - kn
+          - ko
+          - ky
+          - lb
+          - lt
+          - lv
+          - mk
+          - ml
+          - mn
+          - mr
+          - ms
+          - my
+          - nb
+          - ne
+          - nl
+          - nn
+          - os
+          - pa
+          - pl
+          - pt
+          - pt-br
+          - ro
+          - ru
+          - sk
+          - sl
+          - sq
+          - sr
+          - sr-latn
+          - sv
+          - sw
+          - ta
+          - te
+          - tg
+          - th
+          - tk
+          - tr
+          - tt
+          - udm
+          - ug
+          - uk
+          - ur
+          - uz
+          - vi
+          - zh-hans
+          - zh-hant
       tags:
-      - booking_user
+      - api
       security:
       - tokenAuth: []
+      - {}
       responses:
         '200':
-          description: No response body
+          content:
+            application/vnd.oai.openapi:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/yaml:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/vnd.oai.openapi+json:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /booking_user/{id}/:
     post:
       operationId: booking_user_create
-      tags:
-      - booking_user
-      security:
-      - tokenAuth: []
-      responses:
-        '200':
-          description: No response body
-  /booking_user/{id}/:
-    get:
-      operationId: booking_user_retrieve_2
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        required: true
-      tags:
-      - booking_user
-      security:
-      - tokenAuth: []
-      responses:
-        '200':
-          description: No response body
-    post:
-      operationId: booking_user_create_2
       parameters:
       - in: path
         name: id
@@ -278,25 +389,9 @@ paths:
       responses:
         '200':
           description: No response body
-  /profile/{id}/:
+  /profiles/:
     get:
-      operationId: profile_retrieve_2
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        required: true
-      tags:
-      - profile
-      security:
-      - tokenAuth: []
-      responses:
-        '200':
-          description: No response body
-  /providers/:
-    get:
-      operationId: providers_list
+      operationId: profiles_list
       parameters:
       - in: query
         name: fname
@@ -307,10 +402,9 @@ paths:
         schema:
           type: string
       tags:
-      - providers
+      - profiles
       security:
       - tokenAuth: []
-      - {}
       responses:
         '200':
           content:
@@ -321,9 +415,9 @@ paths:
                   $ref: '#/components/schemas/ProviderProfile'
           description: ''
     post:
-      operationId: providers_create
+      operationId: profiles_create
       tags:
-      - providers
+      - profiles
       requestBody:
         content:
           application/json:
@@ -338,7 +432,6 @@ paths:
         required: true
       security:
       - tokenAuth: []
-      - {}
       responses:
         '201':
           content:
@@ -346,30 +439,24 @@ paths:
               schema:
                 $ref: '#/components/schemas/ProviderProfile'
           description: ''
-  /providers/{id}/:
+  /profiles/{id}/:
     get:
-      operationId: providers_retrieve
+      operationId: profiles_retrieve
       parameters:
       - in: path
         name: id
         schema:
           type: integer
-        description: A unique integer value identifying this profile.
         required: true
       tags:
-      - providers
+      - profiles
       security:
       - tokenAuth: []
-      - {}
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProviderProfile'
-          description: ''
+          description: No response body
     put:
-      operationId: providers_update
+      operationId: profiles_update
       parameters:
       - in: path
         name: id
@@ -378,7 +465,7 @@ paths:
         description: A unique integer value identifying this profile.
         required: true
       tags:
-      - providers
+      - profiles
       requestBody:
         content:
           application/json:
@@ -393,7 +480,6 @@ paths:
         required: true
       security:
       - tokenAuth: []
-      - {}
       responses:
         '200':
           content:
@@ -402,7 +488,7 @@ paths:
                 $ref: '#/components/schemas/ProviderProfile'
           description: ''
     patch:
-      operationId: providers_partial_update
+      operationId: profiles_partial_update
       parameters:
       - in: path
         name: id
@@ -411,7 +497,7 @@ paths:
         description: A unique integer value identifying this profile.
         required: true
       tags:
-      - providers
+      - profiles
       requestBody:
         content:
           application/json:
@@ -425,7 +511,6 @@ paths:
               $ref: '#/components/schemas/PatchedProviderProfile'
       security:
       - tokenAuth: []
-      - {}
       responses:
         '200':
           content:
@@ -434,7 +519,7 @@ paths:
                 $ref: '#/components/schemas/ProviderProfile'
           description: ''
     delete:
-      operationId: providers_destroy
+      operationId: profiles_destroy
       parameters:
       - in: path
         name: id
@@ -443,10 +528,9 @@ paths:
         description: A unique integer value identifying this profile.
         required: true
       tags:
-      - providers
+      - profiles
       security:
       - tokenAuth: []
-      - {}
       responses:
         '204':
           description: No response body
@@ -671,6 +755,7 @@ components:
           type: string
           writeOnly: true
       required:
+      - email
       - password
       - username
     WorkAddressEnum:
