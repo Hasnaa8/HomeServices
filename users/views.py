@@ -32,7 +32,16 @@ class RegisterView(APIView):
         serializer = UserSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        username = serializer.validated_data['username']
+        password = serializer.validated_data['password']
+        user = authenticate(username=username, password=password)
+        login(request, user)
+
+        token, created = Token.objects.get_or_create(user=user)
+        profile = CustomerProfileSerializer(user.profile)
+
+        return Response({'profile':profile.data,'token': token.key}, status=status.HTTP_201_CREATED)
 
 # login view - authenticate user - create token
 class LoginView(APIView):
