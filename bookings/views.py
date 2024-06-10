@@ -146,11 +146,15 @@ def my_schedule_completed(request):
         return Response(serializer.data)
 
 class BookingConfirmView(APIView):
-    permission_classes = [IsAuthenticatedAndIsCraftsman,IsCutomerOrProvider ] 
+    permission_classes = [IsAuthenticatedAndIsCraftsman, IsCutomerOrProvider] 
     def put(self, request, pk):
         booking = Booking.objects.get(pk=pk)
         if not booking:
             return Response(status=status.HTTP_404_NOT_FOUND)
+
+        if booking.provider != request.user.profile:
+            return Response({"detail":"Only provider can confirm this appointment"},status=status.HTTP_400_BAD_REQUEST)
+
 
         if booking.status != "pending":
             return Response({"error": "Appointment cannot be confirmed in current status."}, status=status.HTTP_400_BAD_REQUEST)
@@ -165,6 +169,9 @@ class BookingCompleteView(APIView):
         booking = Booking.objects.get(pk=pk)
         if not booking:
             return Response(status=status.HTTP_404_NOT_FOUND)
+
+        if booking.provider != request.user.profile:
+            return Response({"detail":"Only provider can confirm this appointment"}, status=status.HTTP_400_BAD_REQUEST)
 
         if booking.status != "confirmed":
             return Response({"error": "Appointment cannot be completed in current status."}, status=status.HTTP_400_BAD_REQUEST)

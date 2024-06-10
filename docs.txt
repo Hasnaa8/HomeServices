@@ -423,27 +423,50 @@ http://127.0.0.1:8000/id/ GET REQ =>{
         "data1": [
             {
                 "user": {
-                    "email": "te3@gmail.com",
-                    "username": "test10"
+                    "email": "hasnaaayache123.ha@gmail.com",
+                    "username": "hasnaa87"
                 },
-                "pk": 6,
-                "fname": "test10",
-                "lname": "Noneusers2",
-                "photo": "/media/default.jfif",
-                "bdate": "2024-03-22",
-                "gender": "male",
+                "pk": 16,
+                "fname": "Hasnaa",
+                "lname": "Almohamad",
+                "photo": null,
+                "bdate": "2000-08-13",
+                "gender": "female",
                 "city": "Homs",
-                "home_address": "AlHamra",
-                "phone": "542695",
+                "home_address": "Alhadara",
+                "phone": "0985278587",
                 "is_craftsman": true,
-                "service": 15,
-                "description": "gjhhjhj",
-                "work_from": "11:00:00",
-                "work_to": "17:00:00",
-                "price_from": "545.00",
-                "price_to": "45464.00",
+                "service": 18,
+                "description": ";)",
+                "work_from": "08:30:00",
+                "work_to": "18:00:00",
+                "price_from": "500.00",
+                "price_to": "5000.00",
                 "work_address": "AlWa3r"
-            }, ... 
+            },
+            {
+                "user": {
+                    "email": "Saly@gmail.com",
+                    "username": "Saly"
+                },
+                "pk": 35,
+                "fname": "Saly",
+                "lname": "Mohamad",
+                "photo": null,
+                "bdate": "1999-06-10",
+                "gender": "female",
+                "city": "Homs",
+                "home_address": "Alhadara",
+                "phone": "09852786935",
+                "is_craftsman": true,
+                "service": 18,
+                "description": ";)",
+                "work_from": "08:30:00",
+                "work_to": "18:00:00",
+                "price_from": "500.00",
+                "price_to": "5000.00",
+                "work_address": "AlWa3r"
+            }, ...
         ],
         // if there is no provider
         "data2":[],
@@ -474,16 +497,16 @@ http://127.0.0.1:8000/edit_booking/id GET REQ =>{
 	res:{
         "success": true,
    	    "data": {
-            "id": ,//booking_pk
-            "status": ,//as default "pending"
-            "city": ,
-            "home_address": ,
-            "phone": ,
-            "date": ,
-            "time": ,
-            "customer": ,//customer_profile_pk
-            "provider": ,//provider_profile_pk
-            "service": //service_pk
+            "id":24 ,//booking_pk
+            "status":"confirmed" ,//as default "pending"
+            "city": "Homs",
+            "home_address": "AlHamra",
+            "phone": "09852744441",
+            "date": "2024-09-11",
+            "time": "12:00:00",
+            "customer": 42,//customer_profile_pk
+            "provider": 41,//provider_profile_pk
+            "service": 19//service_pk
         },
 	}
 }
@@ -544,17 +567,29 @@ http://127.0.0.1:8000/my_orders_pending/ GET REQ =>{
    	    // if there are pending reservations in customer's orders
         "data1": [
             {
-                "id": ,
+                "id": 13,
                 "status": "pending",
-                "city": ,
-                "home_address": ,
-                "phone": ,
-                "date": ,
-                "time": ,
-                "customer": ,
-                "provider": ,
-                "service": 
-            }, ... 
+                "city": "Homs",
+                "home_address": "AlHamra",
+                "phone": "0985274556",
+                "date": "2024-06-06",
+                "time": "12:20:00",
+                "customer": 49,
+                "provider": 17,
+                "service": 21
+            },
+            {
+                "id": 14,
+                "status": "pending",
+                "city": "Homs",
+                "home_address": "AlHamra",
+                "phone": "0985274556",
+                "date": "2024-06-17",
+                "time": "11:00:00",
+                "customer": 49,
+                "provider": 48,
+                "service": 17
+            }, ...
         ],
         // if there is no pending appointment
         "data2": [],
@@ -567,17 +602,17 @@ http://127.0.0.1:8000/my_orders_confirmed/ GET REQ =>{
    	    // if there are confirmed reservations in customer's orders
         "data1": [
             {
-                "id": ,
+                "id": 24,
                 "status": "confirmed",
-                "city": ,
-                "home_address": ,
-                "phone": "",
-                "date": ,
-                "time": ,
-                "customer": ,
-                "provider": ,
-                "service": 
-            }
+                "city": "Homs",
+                "home_address": "AlHamra",
+                "phone": "09852744441",
+                "date": "2024-09-11",
+                "time": "12:00:00",
+                "customer": 42,
+                "provider": 41,
+                "service": 19
+            }, ...
         ],
         // if there is no confirmed appointment
         "data2": [],
@@ -590,17 +625,17 @@ http://127.0.0.1:8000/my_orders_completed/ GET REQ =>{
    	    // if there are completed reservations in customer's orders
         "data1": [
             {
-                "id": ,
+                "id": 32,
                 "status": "completed",
-                "city": ,
-                "home_address": ,
-                "phone": "",
-                "date": ,
-                "time": ,
-                "customer": ,
-                "provider": ,
-                "service": 
-            }
+                "city": "Homs",
+                "home_address": "Alinshaat",
+                "phone": "0941546981",
+                "date": "2024-08-15",
+                "time": "11:20:00",
+                "customer": 17,
+                "provider": 41,
+                "service": 19
+            }, ...
         ],
         // if there is no completed appointment
         "data2": [],
@@ -613,17 +648,29 @@ http://127.0.0.1:8000/my_schedule_pending/ GET REQ =>{
    	    // if there are pending reservations in provider's schedule
         "data1": [
             {
-                "id": ,
+                "id": 23,
                 "status": "pending",
-                "city": ,
-                "home_address": ,
-                "phone": "",
-                "date": ,
-                "time": ,
-                "customer": ,
-                "provider": ,
-                "service": 
-            }
+                "city": "Homs",
+                "home_address": "Alinshaat",
+                "phone": "0985274756",
+                "date": "2024-09-07",
+                "time": "10:00:00",
+                "customer": 44,
+                "provider": 41,
+                "service": 19
+            },
+            {
+                "id": 28,
+                "status": "pending",
+                "city": "Homs",
+                "home_address": "AlHamra",
+                "phone": "0985274569",
+                "date": "2024-08-27",
+                "time": "09:15:00",
+                "customer": 43,
+                "provider": 41,
+                "service": 19
+            }, ...
         ],
         // if there is no pending appointment
         "data2": [],
@@ -634,19 +681,19 @@ http://127.0.0.1:8000/my_schedule_confirmed/ GET REQ =>{
 	res:{
         "success": true,
    	    // if there are confirmed reservations in provider's schedule
-        "data1": [
+        "data1":[
             {
-                "id": ,
+                "id": 24,
                 "status": "confirmed",
-                "city": ,
-                "home_address": ,
-                "phone": "",
-                "date": ,
-                "time": ,
-                "customer": ,
-                "provider": ,
-                "service": 
-            }
+                "city": "Homs",
+                "home_address": "AlHamra",
+                "phone": "09852744441",
+                "date": "2024-09-11",
+                "time": "12:00:00",
+                "customer": 42,
+                "provider": 41,
+                "service": 19
+            }, ...
         ],
         // if there is no confirmed appointment
         "data2": [],
@@ -659,19 +706,68 @@ http://127.0.0.1:8000/my_schedule_completed/ GET REQ =>{
    	    // if there are completed reservations in provider's schedule
         "data1": [
             {
-                "id": ,
+                "id": 32,
                 "status": "completed",
-                "city": ,
-                "home_address": ,
-                "phone": "",
-                "date": ,
-                "time": ,
-                "customer": ,
-                "provider": ,
-                "service": 
-            }
+                "city": "Homs",
+                "home_address": "Alinshaat",
+                "phone": "0941546981",
+                "date": "2024-08-15",
+                "time": "11:20:00",
+                "customer": 17,
+                "provider": 41,
+                "service": 19
+            }, ...
         ],
         // if there is no confirmed appointment
         "data2": [],
+	}
+}
+
+
+http://127.0.0.1:8000/my_fav_list/ GET REQ =>{
+	req: 
+	res:{
+        "success": true,
+   	    // if there are providers in fav list
+        "data1": [
+            {
+                "user": {
+                    "email": "YamanTamer@gmail.com",
+                    "username": "Superman0_0"
+                },
+                "pk": 47,
+                "fname": "Yaman",
+                "lname": "Tamer",
+                "photo": null,
+                "bdate": "2001-10-09",
+                "gender": "male",
+                "city": "Homs",
+                "home_address": "AlHamra",
+                "phone": "09852745698",
+                "is_craftsman": true,
+                "service": 23,
+                "description": "=)",
+                "work_from": "10:00:00",
+                "work_to": "18:30:00",
+                "price_from": "40.00",
+                "price_to": "1000.00",
+                "work_address": "AlHamra",
+                "is_favorited": true
+            }, 
+            ...
+        ],
+        // if there is no provider in fav list
+        "data2": [],
+	}
+}
+
+
+http://127.0.0.1:8000/edit_fav_list/id/ POST REQ =>{
+    id : provider_profile_id
+	req: 
+	res:{
+        "success": true,
+        "detail": if provider not exists in fav list: "User added to favourites"
+                  elif provider in fav list: "User removed from favourites"
 	}
 }

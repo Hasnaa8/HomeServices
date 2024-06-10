@@ -68,6 +68,10 @@ urlpatterns = [
     
     path('my_schedule_completed/' ,booking_views.my_schedule_completed, name='my_schedule_completed'),
     
+    path('my_fav_list/' ,user_views.FavView.as_view(), name='my_fav_list'),
+
+    path('edit_fav_list/<int:pk>/' ,user_views.edit_fav_list, name='edit_fav_list'),
+    
     path('users', include('users.urls')),
     
     path('', include('services.urls')),

@@ -174,3 +174,27 @@ class DeleteUserView(generics.GenericAPIView):
         user.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+class FavView(APIView):
+    def get(self, request):
+        user = request.user
+        favs = Fav.objects.filter(profile=user.profile)
+        profiles = Profile.objects.filter(fav_profile__in=favs)
+        serialized_profiles = FavSerializer(profiles, context={"request":request}, many=True)
+        return Response(serialized_profiles.data)
+
+@api_view(['POST'])
+def edit_fav_list(request, pk):
+    user = request.user
+    fav_profile = Profile.objects.get(pk=pk)
+    if user == fav_profile :
+        Response({'detail': 'Cannot add/delete yourself to/from favourites'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    if fav_profile.is_craftsman:
+        fav, created = Fav.objects.get_or_create(profile=user.profile, fav_profile=fav_profile)
+        if created:
+            return Response({'detail': 'User added to favourites'}, status=status.HTTP_200_OK)
+        else:
+            fav.delete()
+            return Response({'detail': 'User removed from favourites'}, status=status.HTTP_204_NO_CONTENT)
+    else :
+        return Response({'detail': 'Cannot add normal user to favourite'}, status=status.HTTP_400_BAD_REQUEST)

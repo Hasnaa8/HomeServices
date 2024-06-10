@@ -81,3 +81,22 @@ class DeleteUserSerializer(serializers.ModelSerializer):
         if value != True:
             raise serializers.ValidationError("You must confirm the deletion.")
         return value
+    
+
+class FavSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)  # Nested serializer to include user details
+    is_favorited = serializers.SerializerMethodField(read_only=True)
+
+    def get_is_favorited(self, instance):
+        request = self.context['request']
+        if request.user.is_authenticated:
+            return Fav.objects.filter(profile=request.user.profile, fav_profile=instance).exists()
+        return False
+
+    class Meta:
+        model = Profile
+        fields = ('user','pk',  'fname', 'lname', 'photo', 'bdate',
+                 'gender','city', 'home_address', 'phone', 'is_craftsman', 
+                 'service', 'description', 'work_from',
+                 'work_to', 'price_from', 'price_to', 'work_address',
+                 'is_favorited')

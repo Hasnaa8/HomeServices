@@ -1,6 +1,5 @@
 from django.db import models
 from django.contrib.auth.models import User
-from PIL import Image
 from services.models import Service
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -61,7 +60,7 @@ class Profile(models.Model):
     )
     work_address = models.CharField(max_length=50, choices=wu_choices, null=True)
     role = models.PositiveSmallIntegerField(choices=ROLES, null=True, blank=True)
-    users_favourite = models.ManyToManyField(User, related_name="user_wishlist", blank=True)
+    #users_favourite = models.ManyToManyField(User, related_name="user_favourite", blank=True)
     def __str__(self):
         return f'{ self.user.username } Profile'
     
@@ -77,7 +76,19 @@ class Profile(models.Model):
             return Profile.objects.filter(is_craftsman=True).filter(service=service) 
         else: 
             return Profile.get_all_providers() 
-        
+
+
+class Fav(models.Model):
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='favs')
+    fav_profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='fav_profile')
+     
+    class Meta:
+        verbose_name = 'Favourite'
+
+    def __str__(self):
+        return f"Favourite by {self.profile.user.username} to {self.fav_profile.user.username}"
+
+
 @receiver(post_save, sender=User)
 def create_or_update_user_profile(sender, instance, created, **kwargs):
     if created:

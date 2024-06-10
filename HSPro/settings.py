@@ -79,6 +79,15 @@ CORS_ALLOWED_ORIGINS = [
         "http://127.0.0.1:9000"
     ]
 
+ALLOWED_HOSTS = [
+    '9334-185-182-193-115.ngrok-free.app',
+    '127.0.0.1'
+]
+
+CSRF_TRUSTED_ORIGINS = [
+'https://9334-185-182-193-115.ngrok-free.app'
+]
+
 ROOT_URLCONF = 'HSPro.urls'
 
 import os
